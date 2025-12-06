@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Archeological Protocol - Core System</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for better aesthetics */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        /* SCROLLBAR TRACK: Matches default dark background */
+        body::-webkit-scrollbar-track {
+            background: #1f2937; /* Default Dark Mode Background */
+        }
+        body::-webkit-scrollbar-thumb {
+            background-color: #06b6d4; /* Cyan accent color */
+            border-radius: 20px;
+            /* Border matches default dark background */
+            border: 2px solid #1f2937; 
+        }
+        /* Custom font import for a futuristic feel, defaulting to Inter */
+        html {
+            font-family: 'Inter', sans-serif;
+            /* Added banana cursor (KEPT) */
+            cursor: url('https://em-content.zobj.net/source/apple/354/banana_1f34c.png'), auto; 
+        }
+        
+        /* --- GOOGLE GRAY THEME (Applied when 'light-mode' class is toggled) --- */
+        .light-mode {
+            /* Main Background: Google Gray */
+            background-color: #F1F3F4 !important;
+            color: #1f2937 !important; /* Dark text */
+        }
+        
+        /* Background-Dark override */
+        .light-mode .bg-background-dark {
+            background-color: #F1F3F4 !important; 
+        }
+        
+        /* Text colors should be dark */
+        .light-mode .text-gray-200 {
+            color: #4b5563 !important; /* Secondary dark text */
+        }
+
+        /* Component Backgrounds (e.g., Search Bar, Main Section, Menu) */
+        .light-mode .bg-protocol-blue {
+            background-color: #ffffff !important; /* Pure White components */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06) !important; 
+            border-color: #d1d5db !important; /* Light gray border */
+        }
+        
+        /* Accent Colors remain Cyan/Gold, but text inside dark components needs to be dark */
+        .light-mode .text-white {
+            color: #1f2937 !important; /* Menu link text color */
+        }
+        .light-mode .placeholder-gray-400 {
+            color: #6b7280 !important;
+        }
+
+        /* Taskbar Specifics */
+        .light-mode .bg-protocol-blue\/95 {
+            background-color: rgba(255, 255, 255, 0.95) !important; /* White translucent taskbar */
+        }
+
+        .light-mode .text-background-dark {
+            /* Text on the highlight mark (needs to be dark if highlight is bright) */
+            color: #f3f4f6 !important; 
+        }
+        
+        /* Scrollbar in light mode (Google Gray Theme) */
+        .light-mode::-webkit-scrollbar-track {
+            background: #F1F3F4; /* Matches main background */
+        }
+        .light-mode::-webkit-scrollbar-thumb {
+            background-color: #06b6d4; /* Cyan thumb */
+            border: 2px solid #F1F3F4; /* Border matches track */
+        }
+
+        /* --- BANANA BACKGROUND (KEPT) --- */
+        #animated-background {
+            /* Fills background with a subtle dark gradient */
+            background: radial-gradient(circle at center, rgba(30, 41, 59, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
+        }
+
+        /* Creates a repeating pattern of small bananas (KEPT) */
+        #animated-background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 1; /* Increased visibility! */
+            /* Using a Data URI for the banana emoji image tile */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 24 24'%3E%3Ctext x='0' y='18' font-size='24'%3E%F0%9F%8D%8C%3C/text%3E%3C/svg%3E");
+            animation: bananaPan 10s linear infinite;
+        }
+
+        @keyframes bananaPan {
+            from { background-position: 0 0; }
+            to { background-position: 80px 80px; }
+        }
+        
+        /* Removed .peeking-banana CSS */
+
+        /* --- PRINT STYLES WERE HERE --- */
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // background-dark is now dark blue/gray (Default Dark Mode)
+                        'background-dark': '#1f2937', 
+                        'protocol-blue': '#1e293b',
+                        'accent-cyan': '#06b6d4',
+                        'accent-gold': '#fbbf24',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<!-- Default Body: Dark Blue/Gray Background, White Text -->
+<body class="bg-background-dark text-gray-200 min-h-screen p-4 sm:p-8 pb-20">
+    
+    <!-- Animated Banana Background (KEPT) -->
+    <div id="animated-background" class="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-10"></div>
+
+    <!-- Fruit Emojis in Top Right Corner (KEPT) -->
+    <div class="fixed top-4 right-4 text-3xl z-30 pointer-events-none space-x-2">
+        <span class="inline-block transform rotate-12">🍎</span> 
+        <span class="inline-block transform -rotate-12">🍌</span> 
+    </div>
+
+    <!-- Hamburger Menu Sidebar (Hidden by default) -->
+    <div id="side-menu" class="fixed top-0 left-0 w-64 h-full bg-protocol-blue p-6 z-[100] transition-transform duration-300 transform -translate-x-full shadow-2xl border-r border-accent-cyan/50">
+        <h3 class="text-3xl font-bold text-accent-gold mb-8">Navigation Index</h3>
+        <ul class="space-y-4">
+            <li><a href="#" class="text-white hover:text-accent-cyan transition duration-150 text-lg" onclick="showView('index'); toggleMenu()">Homepage</a></li>
+            <li><a href="#" class="text-white hover:text-accent-cyan transition duration-150 text-lg" onclick="showView('blank'); toggleMenu()">Blank Page</a></li>
+            <!-- NEW: External link for Permits -->
+            <li>
+                <a 
+                    href="https://binarybananauniversalprotocols.info/permits" 
+                    target="_blank" 
+                    class="text-white hover:text-accent-cyan transition duration-150 text-lg" 
+                    onclick="toggleMenu()"
+                >
+                    Permits
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Overlay (for clicking outside to close) -->
+    <div id="menu-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-[90] hidden transition-opacity duration-300"></div>
+
+    <div class="max-w-4xl mx-auto">
+
+        <!-- Search Bar -->
+        <div class="mb-12 pt-4"> 
+            <div class="relative">
+
+                <!-- Menu Button -->
+                <button id="menu-button" onclick="toggleMenu()" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-accent-cyan hover:text-white transition duration-200 p-2 rounded-lg z-20 focus:outline-none">
+                    <!-- Hamburger Icon -->
+                    <svg id="menu-icon" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <!-- Close Icon -->
+                    <svg id="close-icon" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <!-- Search Icon Position -->
+                 <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-14 top-1/2 transform -translate-y-1/2 h-5 w-5 text-accent-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+
+                <!-- Search Input Padding -->
+                <input 
+                    type="text" 
+                    id="search-input"
+                    oninput="searchContent(this.value)"
+                    placeholder="Search Protocol Documents..."
+                    class="w-full pl-24 pr-4 py-3 bg-protocol-blue text-white placeholder-gray-400 rounded-lg border border-accent-cyan/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan transition duration-200 shadow-md"
+                >
+
+                <!-- Peeking Banana Emoji / Flying Banana (REMOVED) -->
+            </div>
+        </div>
+        
+        <!-- Main Content Area Wrapper -->
+        <section id="main-content-wrapper" class="bg-protocol-blue p-8 sm:p-12 rounded-xl shadow-lg mb-12 border border-accent-cyan/50 h-[60vh] overflow-y-auto">
+            
+            <!-- Protocol Index View (Default) -->
+            <div id="protocol-index-view" class="text-left w-full h-full text-gray-200">
+                <h2 class="text-4xl font-bold text-accent-gold mb-8">
+                   Universal Protocols: Index
+                </h2>
+                <ul class="space-y-4 text-2xl font-semibold text-accent-cyan">
+                    <li><span class="text-accent-gold mr-2">>></span> Mapping Lab Analysis</li>
+                    <li><span class="text-accent-gold mr-2">>></span> Research Design Planning</li>
+                    <li><span class="text-gold-accent mr-2">>></span> Survey and Site Identification</li>
+                    <li><span class="text-accent-gold mr-2">>></span> Permits</li>
+                    <li><span class="text-accent-gold mr-2">>></span> Field Survey</li>
+                    <li><span class="text-accent-gold mr-2">>></span> Controled Digging</li>
+                    <li><span class="text-accent-gold mr-2">>></span> Lab Analyis</li>
+                    <li><span class="text-accent-gold mr-2">>></span> Screening Soil</li>
+                    <li><span class="text-accent-gold mr-2">>></span> Looting</li>
+
+             </ul>
+                <p class="mt-12 text-lg text-cyan-100/70">
+                    Use the search bar above to quickly locate specific terms within the protocol documents.
+                </p>
+            </div>
+
+            <!-- Regional Protocols View (Hidden by default) -->
+            <div id="regional-protocols-view" class="text-left w-full h-full text-gray-200 hidden">
+                <!-- Content will be generated by JS here: renderRegionalProtocols() -->
+            </div>
+
+            <!-- Blank Page View (Hidden by default) -->
+            <div id="blank-page-view" class="hidden w-full h-full flex flex-col items-center justify-center text-center">
+                <h3 class="text-3xl font-bold text-accent-gold mb-4">Current Location Acknowledged</h3>
+                <p class="text-xl text-white">You are in: <span class="text-accent-cyan font-mono">
+11911 Clinton River Rd, Sterling Heights, MI 48313
+</span></p>
+                <p class="text-2xl mt-8 font-bold text-accent-cyan">Here is a property map</p>
+
+            </div>
+            
+            <!-- Minigame Views (REMOVED) -->
+
+        </section>
+
+    </div>
+
+    <!-- Universal Command Bar (Taskbar) -->
+    <nav class="fixed bottom-0 left-0 right-0 w-full bg-protocol-blue/95 border-t border-accent-cyan/50 shadow-2xl p-3 z-50 backdrop-blur-sm">
+        <div class="max-w-4xl mx-auto flex justify-between items-center h-10">
+
+            <!-- "Made by Binary Bananas" Text -->
+            <span class="text-sm font-mono text-accent-gold/80 hidden sm:block">
+                Made by Binary Bananas(Reid,Declan,Greyson and Charlie).
+            </span>
+
+            <!-- Button Group -->
+            <div class="flex items-center space-x-3">
+                
+                <!-- Print Button was here -->
+
+                <!-- Light/Dark Mode Button -->
+                <button id="mode-toggle-btn" onclick="toggleLightMode()" class="p-1 rounded-full text-accent-cyan hover:text-white hover:bg-protocol-blue/50 transition duration-150" title="Toggle Light/Dark Mode">
+                    <!-- Sun Icon (for dark mode display) -->
+                    <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <!-- Moon Icon (for light mode display - hidden initially) -->
+                    <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+            </div>
+            
+        </div>
+    </nav>
+
+    <script>
+        // Global variable to hold the original content of the mission paragraph
+        let originalMissionText = '';
+        
+        // --- GLOBAL STATE FOR LOCATION ---
+        let currentManualRegion = "North America"; 
+        let currentLocationDisplay = "Attempting Geo-Scan..."; 
+        
+        // Mock data for regional protocols
+        const regionalProtocols = [
+            { 
+                region: "North America", 
+                status: "Operational", 
+                focus: "Pre-Contact Sites, Industrial Archeology", 
+                key_protocol: "NA-GEO-101" 
+            },
+            { 
+                region: "Western Europe", 
+                status: "Requires Review", 
+                focus: "Roman/Medieval Structures, Underwater Sites", 
+                key_protocol: "EU-STR-45B" 
+            },
+            { 
+                region: "Sub-Saharan Africa", 
+                status: "Critical Update", 
+                focus: "Paleolithic Hominid Habitats, Rock Art", 
+                key_protocol: "SA-PAL-C03" 
+            },
+            { 
+                region: "East Asia", 
+                status: "Operational", 
+                focus: "Dynastic Tomb Excavation, Maritime Silk Road", 
+                key_protocol: "EA-DT-22X" 
+            },
+            { 
+                region: "South America", 
+                status: "Requires Review", 
+                focus: "Inca/Pre-Inca Road Networks, Highland Adaptation", 
+                key_protocol: "SA-INC-310" 
+            },
+        ];
+        
+        // Function to safely highlight text within the Protocol Index (All Easter Egg logic REMOVED)
+        function searchContent(query) {
+            const indexView = document.getElementById('protocol-index-view');
+            
+            // Default to the original text
+            let text = originalMissionText;
+
+            // 1. Restore the original text if the search field is empty
+            if (!query || query.trim() === '') {
+                indexView.innerHTML = text;
+                return;
+            }
+            
+            // Only perform search if the Index view is currently visible
+            if (!indexView.classList.contains('hidden')) {
+                // 2. Escape special characters and create a case-insensitive, global regex
+                // Ensure we use the clean text for the regex test
+                const plainText = text.replace(/<[^>]*>/g, ''); 
+                const escapedQuery = query.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const searchRegex = new RegExp('(' + escapedQuery + ')', 'gi');
+
+                // 3. Search and highlight
+                if (searchRegex.test(plainText)) {
+                    // Simple replacement works fine for this structure
+                    const highlightedHtml = originalMissionText.replace(searchRegex, '<mark class="bg-accent-gold text-gray-900 p-0.5 rounded-sm">$1</mark>');
+                    indexView.innerHTML = highlightedHtml;
+                } else {
+                    // If nothing is found, restore original content
+                    indexView.innerHTML = text;
+                }
+            }
+            // All other checks (team names, minigames) were removed here.
+        }
+        
+        // --- MOCKED: Geolocation function to bypass Iframe security policy errors ---
+        function getGeolocation() {
+            console.log("Geolocation: Using simulated coordinates due to environment permissions policy.");
+            
+            // 1. Simulate a successful scan result
+            currentLocationDisplay = `Geo-Scan Simulated: Lat 42.9247, Lon -82.4930 (N.A. Default)`;
+
+            // 2. Set the default region
+            currentManualRegion = "North America"; 
+            
+            // 3. Render the protocols using the simulated data
+            // NOTE: This function is still called for consistency, but the view cannot be navigated to from the menu.
+            renderRegionalProtocols();
+        }
+
+
+        // Function to update the manually selected region and re-render
+        function setCurrentRegion(region) {
+            currentManualRegion = region;
+            renderRegionalProtocols();
+        }
+
+        // Function to render the regional protocols dashboard
+        function renderRegionalProtocols() {
+            const container = document.getElementById('regional-protocols-view');
+            
+            // 1. Location Header and Selector
+            const locationHeaderHtml = `
+                <h2 class="text-4xl font-bold text-accent-gold mb-4">
+                   Regional Protocol Status Dashboard
+                </h2>
+                <div class="mb-8 p-4 rounded-lg bg-protocol-blue/50 border border-accent-cyan flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                    <div class="flex flex-col mb-4 sm:mb-0">
+                        <!-- Detected Location Display (using the Geolocation result) -->
+                        <p class="text-lg font-semibold flex items-start mb-2 sm:mb-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-accent-cyan mr-2 mt-1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <span class="flex flex-col">
+                                <span class="text-base text-cyan-300">Detected Location:</span>
+                                <span class="text-accent-gold font-bold text-sm sm:text-lg">${currentLocationDisplay}</span>
+                            </span>
+                        </p>
+                    </div>
+
+                    <!-- Manual Region Selector (for protocol filtering) -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center w-full sm:w-auto">
+                        <p class="text-lg font-semibold whitespace-nowrap mr-4 mb-2 sm:mb-0">
+                            Protocol Region:
+                            <span class="ml-1 text-accent-gold font-bold">${currentManualRegion}</span>
+                        </p>
+                        <select 
+                            id="region-selector" 
+                            onchange="setCurrentRegion(this.value)"
+                            class="p-2 rounded-lg bg-background-dark border border-accent-gold text-white focus:ring-1 focus:ring-accent-gold w-full sm:w-auto"
+                        >
+                            ${regionalProtocols.map(p => 
+                                `<option value="${p.region}" ${p.region === currentManualRegion ? 'selected' : ''}>
+                                    ${p.region}
+                                </option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </div>
+                <p class="text-lg mb-6 text-cyan-100/70">
+                    Protocols for the selected region are highlighted in **bright gold**.
+                </p>
+            `;
+            
+            // 2. Generate the List Items
+            const listHtml = regionalProtocols.map(p => {
+                let borderColor = 'border-accent-cyan';
+                let statusBg = 'bg-green-800 text-green-200';
+                let cardClasses = 'bg-protocol-blue transition duration-300 hover:bg-protocol-blue/80';
+                let regionTextColor = 'text-white';
+
+                if (p.status === 'Critical Update') {
+                    borderColor = 'border-red-500';
+                    statusBg = 'bg-red-800 text-red-200';
+                } else if (p.status === 'Requires Review') {
+                    borderColor = 'border-yellow-500';
+                    statusBg = 'bg-yellow-800 text-yellow-200';
+                }
+                
+                // Highlight the card if it matches the current region
+                if (p.region === currentManualRegion) {
+                    borderColor = 'border-accent-gold border-4'; // Thicker border
+                    cardClasses = 'bg-protocol-blue/90 shadow-2xl transition duration-300 ring-2 ring-accent-gold';
+                    regionTextColor = 'text-accent-gold'; // Gold title text
+                }
+
+                return `
+                    <div class="p-4 rounded-xl ${cardClasses} border-l-4 ${borderColor} shadow-xl mb-4">
+                        <div class="flex justify-between items-start mb-1">
+                            <h3 class="text-2xl font-bold ${regionTextColor}">${p.region}</h3>
+                            <span class="text-xs font-mono p-1 rounded-full ${statusBg} px-3 uppercase tracking-wider">
+                                ${p.status}
+                            </span>
+                        </div>
+                        <p class="text-gray-400 mt-2">Focus: <span class="text-gray-200">${p.focus}</span></p>
+                        <p class="text-gray-400">Key ID: <span class="text-accent-cyan">${p.key_protocol}</span></p>
+                    </div>
+                `;
+            }).join('');
+            
+            // 3. Combine and render
+            container.innerHTML = locationHeaderHtml + `<div class="mt-4 space-y-4">${listHtml}</div>`;
+        }
+        
+        // Function to switch between the different main content views
+        function showView(viewId) {
+            document.getElementById('protocol-index-view').classList.add('hidden');
+            document.getElementById('regional-protocols-view').classList.add('hidden');
+            document.getElementById('blank-page-view').classList.add('hidden');
+            
+            if (viewId === 'index') {
+                document.getElementById('protocol-index-view').classList.remove('hidden');
+            } else if (viewId === 'regions') {
+                document.getElementById('regional-protocols-view').classList.remove('hidden');
+                getGeolocation(); 
+            } else if (viewId === 'blank') {
+                document.getElementById('blank-page-view').classList.remove('hidden');
+            }
+            
+            // Clear search input whenever switching views
+            const searchInput = document.getElementById('search-input');
+            if (searchInput.value) {
+                searchInput.value = '';
+                // Just reset the original text
+                document.getElementById('protocol-index-view').innerHTML = originalMissionText;
+            }
+        }
+
+
+        // Function to set the visual mode and update icons
+        function applyMode(isLight) {
+            const body = document.body;
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+            const menuIcon = document.getElementById('menu-icon');
+            const closeIcon = document.getElementById('close-icon');
+
+            if (isLight) {
+                body.classList.add('light-mode');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                
+                // Toggle visibility based on menu state
+                if (document.getElementById('side-menu').classList.contains('-translate-x-full')) {
+                    menuIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                } else {
+                    menuIcon.classList.add('hidden');
+                    closeIcon.classList.remove('hidden');
+                }
+            } else {
+                body.classList.remove('light-mode');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+                
+                // Toggle visibility based on menu state
+                if (document.getElementById('side-menu').classList.contains('-translate-x-full')) {
+                    menuIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                } else {
+                    menuIcon.classList.add('hidden');
+                    closeIcon.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Function to toggle between light and dark mode
+        function toggleLightMode() {
+            // isLight is true if 'light-mode' class is added (white theme)
+            const isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('archeologyMode', isLight ? 'light' : 'dark');
+            applyMode(isLight);
+        }
+
+        // Function to toggle the side menu
+        function toggleMenu() {
+            const sideMenu = document.getElementById('side-menu');
+            const menuOverlay = document.getElementById('menu-overlay');
+            const menuIcon = document.getElementById('menu-icon');
+            const closeIcon = document.getElementById('close-icon');
+
+            // Check if the menu is currently hidden
+            const isHidden = sideMenu.classList.contains('-translate-x-full');
+
+            if (isHidden) {
+                // SHOW menu
+                sideMenu.classList.remove('-translate-x-full');
+                menuOverlay.classList.remove('hidden');
+                menuIcon.classList.add('hidden');
+                closeIcon.classList.remove('hidden');
+            } else {
+                // HIDE menu
+                sideMenu.classList.add('-translate-x-full');
+                menuOverlay.classList.add('hidden');
+                menuIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+            }
+        }
+
+        // Function to initialize the mode and capture original text
+        function initializeApp() {
+            const savedMode = localStorage.getItem('archeologyMode');
+            
+            // 1. Set initial light/dark state
+            let initialIsLight = savedMode === 'light';
+            applyMode(initialIsLight);
+            
+            // 2. Capture the original content text once the DOM is ready
+            const missionElement = document.getElementById('protocol-index-view');
+            if (missionElement) {
+                // Capture the original HTML content of the index view
+                originalMissionText = missionElement.innerHTML;
+            }
+
+            // 3. Initialize the view to the Index
+            showView('index');
+            
+            // 4. Run the geolocation function immediately to set the location data
+            getGeolocation(); 
+            
+            // Anomalous Signal (67) logic was removed here.
+        }
+
+        // --- Initialization ---
+        // Run mode check when the page finishes loading
+        window.addEventListener('load', initializeApp);
+    </script>
+</body>
+</html>
