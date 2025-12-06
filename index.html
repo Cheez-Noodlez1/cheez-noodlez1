@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Archeological Protocol - Core System</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for better aesthetics */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        /* SCROLLBAR TRACK: Matches default dark background */
+        body::-webkit-scrollbar-track {
+            background: #1f2937; /* Default Dark Mode Background */
+        }
+        body::-webkit-scrollbar-thumb {
+            background-color: #06b6d4; /* Cyan accent color */
+            border-radius: 20px;
+            /* Border matches default dark background */
+            border: 2px solid #1f2937; 
+        }
+        /* Custom font import for a futuristic feel, defaulting to Inter */
+        html {
+            font-family: 'Inter', sans-serif;
+            /* New Banana Cursor: Using the actual emoji via SVG Data URI */
+            cursor: url('data:image/svg+xml;charset=utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><text x="0" y="30" font-size="30">🍌</text></svg>') 16 16, default;
+        }
+
+        /* Define the pulse animation for the central message (only used if text is short) */
+        @keyframes pulse-cyan {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* --- BANANA BACKGROUND ANIMATION (Default/Dark Mode) --- */
+        @keyframes bananaScroll {
+            from { background-position: 0 0; }
+            to { background-position: 500px 500px; } /* Slow diagonal scroll */
+        }
+
+        /* Styling for the new animated background layer */
+        #banana-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -10; /* Ensure it stays behind all content */
+            
+            /* Bananas are light/gold and semi-transparent on the dark background */
+            background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><text x='10' y='50' style='opacity:0.1;font-size:30px;fill:%23fbbf24;'>🍌</text></svg>");
+            background-repeat: repeat;
+            background-size: 100px 100px; /* Size of the tile */
+            
+            /* Apply the slow scroll animation */
+            animation: bananaScroll 60s linear infinite;
+        }
+        
+        /* --- FLYING BANANA ANIMATION --- */
+        /* Animation keyframes to move the banana from off-screen left to off-screen right, spinning */
+        @keyframes flyIn {
+            0% { left: -100px; transform: rotate(0deg); opacity: 1; }
+            100% { left: calc(100% + 100px); transform: rotate(360deg); opacity: 0.8; }
+        }
+
+        /* Class for the dynamic banana element */
+        .flying-banana {
+            position: fixed;
+            /* Font size will be set dynamically in JS for variation */
+            animation: flyIn 5s linear forwards; /* 5 second duration */
+            z-index: 99; /* Above main content */
+            pointer-events: none; /* Allows clicks to pass through to elements beneath */
+        }
+
+        /* --- UPDATED "67" ANIMATION (0.5s flash) --- */
+        @keyframes quickFlash {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        .flying-number {
+            position: fixed;
+            z-index: 101; /* On top of everything */
+            font-size: 2rem; /* Big number - UPDATED: Was 4rem, now 2rem */
+            color: #fbbf24; /* Gold color */
+            font-weight: bold;
+            /* UPDATED: Use the new 0.5s animation */
+            animation: quickFlash 0.5s linear forwards; 
+            pointer-events: none;
+            text-shadow: 0 0 15px rgba(251, 191, 36, 0.5); /* Gold glow */
+        }
+        
+        /* --- NEW: Game Styles --- */
+        #game-banana {
+            /* Smooth transition for movement */
+            transition: top 0.1s ease-out, left 0.1s ease-out;
+            /* Prevents selecting the emoji text when clicking fast */
+            user-select: none;
+        }
+
+        #ufo-target {
+            transition: top 0.2s linear, left 0.2s linear;
+            user-select: none;
+        }
+
+        /* Hide number input arrows */
+        #code-input::-webkit-outer-spin-button,
+        #code-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        #code-input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+
+        /* --- GOOGLE GRAY BANANA THEME (Applied when 'light-mode' class is toggled) --- */
+        .light-mode {
+            /* Main Background: Google Gray */
+            background-color: #F1F3F4 !important;
+            color: #1f2937 !important; /* Dark text */
+        }
+        
+        /* Background-Dark override */
+        .light-mode .bg-background-dark {
+            background-color: #F1F3F4 !important; 
+        }
+        
+        /* Text colors should be dark */
+        .light-mode .text-gray-900 {
+            color: #1f2937 !important;
+        }
+        .light-mode .text-gray-200 {
+            color: #4b5563 !important; /* Secondary dark text */
+        }
+
+        /* Component Backgrounds (e.g., Search Bar, Main Section, Menu) */
+        .light-mode .bg-protocol-blue {
+            background-color: #ffffff !important; /* Pure White components */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06) !important; 
+            border-color: #d1d5db !important; /* Light gray border */
+        }
+        
+        /* Accent Colors remain Cyan/Gold, but text inside dark components needs to be dark */
+        .light-mode .text-white {
+            color: #1f2937 !important; /* Menu link text color */
+        }
+        .light-mode .placeholder-gray-400 {
+            color: #6b7280 !important;
+        }
+
+        /* Taskbar Specifics */
+        .light-mode .bg-protocol-blue\/95 {
+            background-color: rgba(255, 255, 255, 0.95) !important; /* White translucent taskbar */
+        }
+
+        .light-mode .text-background-dark {
+            /* Text on the highlight mark (needs to be dark if highlight is bright) */
+            color: #f3f4f6 !important; 
+        }
+        
+        /* Scrollbar in light mode (Google Gray Theme) */
+        .light-mode::-webkit-scrollbar-track {
+            background: #F1F3F4; /* Matches main background */
+        }
+        .light-mode::-webkit-scrollbar-thumb {
+            background-color: #06b6d4; /* Cyan thumb */
+            border: 2px solid #F1F3F4; /* Border matches track */
+        }
+        
+        /* Banana background in light mode (Google Gray Theme) */
+        .light-mode #banana-background {
+            /* Very faint black bananas on the Google Gray background */
+            background-image: url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><text x='10' y='50' style='opacity:0.02;font-size:30px;fill:black;'>🍌</text></svg>");
+            /* Ensure the animation is active */
+            animation: bananaScroll 60s linear infinite;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // background-dark is now dark blue/gray (Default Dark Mode)
+                        'background-dark': '#1f2937', 
+                        'protocol-blue': '#1e293b',
+                        'accent-cyan': '#06b6d4',
+                        'accent-gold': '#fbbf24',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<!-- Default Body: Dark Blue/Gray Background, White Text -->
+<body class="bg-background-dark text-gray-200 min-h-screen p-4 sm:p-8 pb-20">
+    
+    <!-- NEW ANIMATED BANANA BACKGROUND LAYER -->
+    <div id="banana-background"></div>
+
+    <!-- NEW: Fruit Emojis in Top Right Corner of Viewport -->
+    <div class="absolute top-4 right-4 flex items-center space-x-2 z-50">
+        <span class="text-3xl opacity-70 hover:opacity-100 transition duration-200 cursor-default" title="Banana Power">
+            🍌
+        </span>
+        <span class="text-3xl opacity-70 hover:opacity-100 transition duration-200 cursor-default" title="Apple Core">
+            🍎
+        </span>
+    </div>
+
+    <!-- Hamburger Menu Sidebar (Hidden by default) -->
+    <!-- Components remain dark blue in default mode for contrast -->
+    <div id="side-menu" class="fixed top-0 left-0 w-64 h-full bg-protocol-blue p-6 z-[100] transition-transform duration-300 transform -translate-x-full shadow-2xl border-r border-accent-cyan/50">
+        <h3 class="text-3xl font-bold text-accent-gold mb-8">Navigation Index</h3>
+        <ul class="space-y-4">
+            <!-- UPDATED: Renamed "Protocol Index" to "Homepage" -->
+            <li><a href="#" class="text-white hover:text-accent-cyan transition duration-150 text-lg" onclick="showView('index'); toggleMenu()">Homepage</a></li>
+            <!-- New Link for Regional Protocols -->
+            <li><a href="#" class="text-white hover:text-accent-cyan transition duration-150 text-lg font-bold text-accent-gold" onclick="showView('regions'); toggleMenu()">Regional Protocols</a></li>
+            <li><a href="#" class="text-white hover:text-accent-cyan transition duration-150 text-lg" onclick="toggleMenu()">System Logs</a></li>
+        </ul>
+    </div>
+
+    <!-- Overlay (for clicking outside to close) -->
+    <div id="menu-overlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-[90] hidden transition-opacity duration-300"></div>
+
+    <div class="max-w-4xl mx-auto">
+
+        <!-- Search Bar -->
+        <!-- UPDATED: Added mb-12 to replace header margin -->
+        <div class="mb-12 pt-4"> 
+            <div class="relative">
+
+                <!-- ADDED: Menu Button -->
+                <button id="menu-button" onclick="toggleMenu()" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-accent-cyan hover:text-white transition duration-200 p-2 rounded-lg z-20 focus:outline-none">
+                    <!-- Hamburger Icon (Made smaller) -->
+                    <svg id="menu-icon" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <!-- Close Icon (Made smaller) -->
+                    <svg id="close-icon" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"> 
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <!-- UPDATED: Search Icon Position -->
+                 <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-14 top-1/2 transform -translate-y-1/2 h-5 w-5 text-accent-cyan" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+
+                <!-- UPDATED: Search Input Padding -->
+                <input 
+                    type="text" 
+                    id="search-input"
+                    oninput="searchContent(this.value)"
+                    placeholder="Search Protocol Documents..."
+                    class="w-full pl-24 pr-14 py-3 bg-protocol-blue text-white placeholder-gray-400 rounded-lg border border-accent-cyan/50 focus:outline-none focus:ring-2 focus:ring-accent-cyan transition duration-200 shadow-md"
+                >
+
+                <!-- Peeking Banana Emoji -->
+                <span class="absolute right-2 top-1/2 transform -translate-y-1/2 text-3xl rotate-12 cursor-default" title="Peeking Banana">
+                    🍌
+                </span>
+            </div>
+        </div>
+
+        <!-- REMOVED: Header element -->
+        
+        <!-- Main Content Area Wrapper -->
+        <section id="main-content-wrapper" class="bg-protocol-blue p-8 sm:p-12 rounded-xl shadow-lg mb-12 border border-accent-cyan/50 h-[60vh] overflow-y-auto">
+            
+            <!-- Protocol Index View (Default) -->
+            <div id="protocol-index-view" class="text-left w-full h-full text-gray-200">
+                <h2 class="text-4xl font-bold text-accent-gold mb-8">
+                   Binary Bananas Universal Protocols: Index
+                </h2>
+                <ul class="space-y-4 text-2xl font-semibold text-accent-cyan">
+                    <li><span class="text-accent-gold mr-2">>></span> Mapping Lab Analysis</li>
+                    <li><span class="text-accent-gold mr-2">>></span> Research Design Planning</li>
+                    <li><span class="text-gold-accent mr-2">>></span> Survey and Site Identification</li>
+                    <li><span class="text-accent-gold mr-2">>></span> permits</li>
+                    <li><span class="text-accent-gold mr-2">>></span> field survey</li>
+                    <li><span class="text-accent-gold mr-2">>></span> controled digging</li>
+                    <li><span class="text-accent-gold mr-2">>></span> lab analyis</li>
+                    <li><span class="text-accent-gold mr-2">>></span> screenong soil</li>
+                    <li><span class="text-accent-gold mr-2">>></span> looting</li>
+
+             </ul>
+                <p class="mt-12 text-lg text-cyan-100/70">
+                    Use the search bar above to quickly locate specific terms within the protocol documents.
+                </p>
+            </div>
+
+            <!-- Regional Protocols View (Hidden by default) -->
+            <div id="regional-protocols-view" class="text-left w-full h-full text-gray-200 hidden">
+                <!-- Content will be generated by JS here: renderRegionalProtocols() -->
+            </div>
+
+            <!-- Easter Egg View (Hidden by default) -->
+            <div id="easter-egg-view" class="text-left w-full h-full text-gray-200 hidden flex items-center justify-center">
+                <p class="text-4xl font-bold text-center"></p>
+            </div>
+
+            <!-- NEW: Minigame View (Hidden by default) -->
+            <div id="minigame-view" class="text-left w-full h-full text-gray-200 hidden flex-col items-center justify-center">
+                <h2 class="text-4xl font-bold text-accent-gold mb-4">Banana Blitz! 🍌</h2>
+                <p class="text-2xl text-cyan-100 mb-4">Score: <span id="game-score" class="font-bold">0</span></p>
+                <p id="game-timer" class="text-lg text-white mb-4">Time Left: 30s</p>
+                <button id="start-game-btn" onclick="startGame()" class="px-6 py-3 bg-accent-gold text-gray-900 font-bold rounded-lg text-2xl hover:bg-yellow-300 transition">Start Game</button>
+                
+                <div id="game-area" class="w-full h-64 bg-background-dark mt-4 rounded-lg relative overflow-hidden border-2 border-accent-cyan">
+                    <!-- The banana will appear here -->
+                    <span id="game-banana" class="absolute text-6xl cursor-pointer hidden" onclick="whackBanana()" style="user-select: none;">🍌</span>
+                </div>
+                <p id="game-over-text" class="text-2xl text-red-500 font-bold mt-4 hidden">Game Over!</p>
+            </div>
+
+            <!-- NEW: Treasure Hunt Game -->
+            <div id="minigame-treasure-view" class="text-left w-full h-full text-gray-200 hidden flex-col items-center justify-center">
+                <h2 class="text-4xl font-bold text-accent-gold mb-4">Treasure Hunt! 💰</h2>
+                <p id="treasure-message" class="text-2xl text-cyan-100 mb-8">One of these chests has the banana! Choose wisely...</p>
+                <div class="flex space-x-8">
+                    <span id="chest-1" onclick="treasureGame.pick(1)" class="text-8xl cursor-pointer transform transition hover:scale-110">📦</span>
+                    <span id="chest-2" onclick="treasureGame.pick(2)" class="text-8xl cursor-pointer transform transition hover:scale-110">📦</span>
+                    <span id="chest-3" onclick="treasureGame.pick(3)" class="text-8xl cursor-pointer transform transition hover:scale-110">📦</span>
+                </div>
+                <button id="treasure-reset-btn" onclick="treasureGame.reset()" class="mt-8 px-6 py-3 bg-accent-cyan text-white font-bold rounded-lg text-lg hover:bg-cyan-300 transition hidden">Play Again</button>
+            </div>
+
+            <!-- NEW: UFO Spotter Game -->
+            <div id="minigame-ufo-view" class="text-left w-full h-full text-gray-200 hidden flex-col items-center justify-center">
+                <h2 class="text-4xl font-bold text-accent-gold mb-4">UFO Spotter! 🛸</h2>
+                <p class="text-2xl text-cyan-100 mb-4">Score: <span id="ufo-score" class="font-bold">0</span> | Time: <span id="ufo-timer" class="font-bold">20</span>s</p>
+                <button id="ufo-start-btn" onclick="ufoGame.start()" class="px-6 py-3 bg-accent-gold text-gray-900 font-bold rounded-lg text-2xl hover:bg-yellow-300 transition">Start Game</button>
+                <div id="ufo-area" class="w-full h-64 bg-background-dark mt-4 rounded-lg relative overflow-hidden border-2 border-accent-cyan">
+                    <span id="ufo-target" class="absolute text-5xl cursor-pointer hidden" onclick="ufoGame.hit()">🛸</span>
+                </div>
+                <p id="ufo-over-text" class="text-2xl text-red-500 font-bold mt-4 hidden">Game Over!</p>
+            </div>
+
+            <!-- NEW: Code Breaker Game -->
+            <div id="minigame-code-view" class="text-left w-full h-full text-gray-200 hidden flex-col items-center justify-center">
+                <h2 class="text-4xl font-bold text-accent-gold mb-4">Code Breaker! 🔑</h2>
+                <p id="code-message" class="text-2xl text-cyan-100 mb-6">Guess the 3-digit secret code (000-999)</p>
+                <input type="number" id="code-input" maxlength="3" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3);" class="w-40 text-center text-4xl p-2 rounded-lg bg-background-dark text-white border-2 border-accent-cyan" placeholder="???" />
+                <button onclick="codeGame.guess()" class="mt-6 px-6 py-3 bg-accent-gold text-gray-900 font-bold rounded-lg text-2xl hover:bg-yellow-300 transition">Break Code</button>
+                <p id="code-feedback" class="text-2xl font-bold mt-4 h-8"></p>
+            </div>
+
+        </section>
+
+        <!-- Footer content removed -->
+
+    </div>
+
+    <!-- Universal Command Bar (Taskbar) -->
+    <nav class="fixed bottom-0 left-0 right-0 w-full bg-protocol-blue/95 border-t border-accent-cyan/50 shadow-2xl p-3 z-50 backdrop-blur-sm">
+        <div class="max-w-4xl mx-auto flex justify-between items-center h-10">
+
+            <!-- "Made by Binary Bananas" Text -->
+            <span class="text-sm font-mono text-accent-gold/80 hidden sm:block">
+                Made by Binary Bananas(Reid,Declan,Greyson and Charlie).
+            </span>
+
+            <!-- Button Group -->
+            <div class="flex items-center">
+                <!-- Banana Button -->
+                <button onclick="eatBanana()" class="p-1 rounded-full text-2xl hover:bg-protocol-blue/50 transition duration-150 mr-2" title="Peel and Eat">
+                    🍌
+                </button>
+                
+                <!-- Light/Dark Mode Button -->
+                <button id="mode-toggle-btn" onclick="toggleLightMode()" class="p-1 rounded-full text-accent-cyan hover:text-white hover:bg-protocol-blue/50 transition duration-150" title="Toggle Light/Dark Mode">
+                    <!-- Sun Icon (for dark mode display) -->
+                    <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <!-- Moon Icon (for light mode display - hidden initially) -->
+                    <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+            </div>
+            
+        </div>
+    </nav>
+
+    <script>
+        // Global variable to hold the original content of the mission paragraph
+        let originalMissionText = '';
+        
+        // --- NEW GLOBAL STATE FOR LOCATION ---
+        let currentManualRegion = "North America"; // The region used for protocol filtering (manual selection)
+        let currentLocationDisplay = "Attempting Geo-Scan..."; // The dynamically detected location text
+        
+        // Mock data for regional protocols
+        const regionalProtocols = [
+            { 
+                region: "North America", 
+                status: "Operational", 
+                focus: "Pre-Contact Sites, Industrial Archeology", 
+                key_protocol: "NA-GEO-101" 
+            },
+            { 
+                region: "Western Europe", 
+                status: "Requires Review", 
+                focus: "Roman/Medieval Structures, Underwater Sites", 
+                key_protocol: "EU-STR-45B" 
+            },
+            { 
+                region: "Sub-Saharan Africa", 
+                status: "Critical Update", 
+                focus: "Paleolithic Hominid Habitats, Rock Art", 
+                key_protocol: "SA-PAL-C03" 
+            },
+            { 
+                region: "East Asia", 
+                status: "Operational", 
+                focus: "Dynastic Tomb Excavation, Maritime Silk Road", 
+                key_protocol: "EA-DT-22X" 
+            },
+            { 
+                region: "South America", 
+                status: "Requires Review", 
+                focus: "Inca/Pre-Inca Road Networks, Highland Adaptation", 
+                key_protocol: "SA-INC-310" 
+            },
+        ];
+        
+        // --- NEW: Konami Code Logic ---
+        const konamiSequence = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let userSequence = [];
+
+        // --- NEW: Game Logic Variables ---
+        let gameScore = 0;
+        let gameActive = false;
+        let gameTimerInterval;
+        let gameMoveInterval;
+        let gameTimeLeft = 30;
+
+        let ufoGameScore = 0;
+        let ufoGameActive = false;
+        let ufoGameTimerInterval;
+        let ufoGameMoveInterval;
+        let ufoGameTimeLeft = 20;
+
+        let treasureGameWinner = 0;
+
+        let codeGameSecret = "";
+        let codeGameGuesses = 0;
+
+        // Function for the new banana button
+        function eatBanana() {
+            // Logs a fun message to the browser console when the banana is 'eaten'
+            console.log("A banana has been consumed. Energy levels: +10. Potassium matrix stabilized.");
+        }
+
+        // --- NEW: Easter Egg Search Handler ---
+        function handleEasterEggSearch(term) {
+            const indexView = document.getElementById('protocol-index-view');
+            const regionView = document.getElementById('regional-protocols-view');
+            const eggView = document.getElementById('easter-egg-view');
+            const eggText = eggView.querySelector('p');
+            const minigameView = document.getElementById('minigame-view');
+            // NEW game views
+            const treasureGameView = document.getElementById('minigame-treasure-view');
+            const ufoGameView = document.getElementById('minigame-ufo-view');
+            const codeGameView = document.getElementById('minigame-code-view');
+
+            // Hide other views
+            indexView.classList.add('hidden');
+            regionView.classList.add('hidden');
+            eggView.classList.add('hidden');
+            minigameView.classList.add('hidden');
+            minigameView.classList.remove('flex');
+            // NEW
+            treasureGameView.classList.add('hidden');
+            treasureGameView.classList.remove('flex');
+            ufoGameView.classList.add('hidden');
+            ufoGameView.classList.remove('flex');
+            codeGameView.classList.add('hidden');
+            codeGameView.classList.remove('flex');
+            
+            // Stop games if running
+            if (gameActive) endGame();
+            if (ufoGameActive) ufoGame.end();
+
+            // Set the message
+            switch(term) {
+                case 'banana':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🍌 BANANA DETECTED. POTASSIUM LEVELS OPTIMAL. 🍌";
+                    break;
+                case 'apple':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🍎 APPLE DETECTED. DOCTOR AVERTED. 🍎";
+                    break;
+                case '67':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "6️⃣7️⃣ ...Anomalous signal. Data quarantined... 6️⃣7️⃣";
+                    break;
+                case 'easter egg':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🥚 EGG FOUND. You're a good hunter! 🥚";
+                    break;
+                // --- UPDATED EASTER EGGS ---
+                case 'reid':
+                case 'declan':
+                case 'greyson':
+                case 'charlie':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🍌🍌🍌 BANANA OVERLOAD INITIATED! 🍌🍌🍌";
+                    triggerBananaOverload(); // Trigger the bananas!
+                    break;
+                case 'binary bananas':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🍌🍌 Welcome, creators! System 100% operational. 🍌🍌";
+                    break;
+                case 'konami':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "⬆️⬆️⬇️⬇️⬅️➡️⬅️➡️ B A ... Now try it with your keyboard!";
+                    break;
+                // --- 10 NEW EASTER EGGS ---
+                case 'dinosaur':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🦖 Wrong time period! But we appreciate the enthusiasm.";
+                    break;
+                case 'dragon':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🐉 Here be dragons! (But not in the excavation pit, hopefully.)";
+                    break;
+                case 'gemini':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🤖 Hello! I am Gemini, your helpful protocol assistant.";
+                    break;
+                case 'code':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🧑‍💻 You found the code! // TODO: Add more bananas.";
+                    break;
+                case 'treasure':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "💰 X marks the spot! (Please follow proper grid mapping.)";
+                    break;
+                case 'ufo':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🛸 Signal lost... probably just a weather balloon.";
+                    break;
+                case 'secret':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "🤫 This protocol is classified. Access Denied.";
+                    break;
+                case 'hello':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "👋 Hello there! Ready to analyze some artifacts?";
+                    break;
+                case 'matrix':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "💊 Will you take the red banana or the blue banana?";
+                    break;
+                case 'thor':
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "⚡ By Odin's beard! You've found the Mjölnir protocol.";
+                    break;
+                // --- MINIGAME TRIGGER ---
+                case 'secret game':
+                    minigameView.classList.remove('hidden');
+                    minigameView.classList.add('flex'); // Make it a flex container
+                    break;
+                // --- NEW GAME TRIGGERS ---
+                case 'find treasure':
+                    treasureGameView.classList.remove('hidden');
+                    treasureGameView.classList.add('flex');
+                    treasureGame.reset();
+                    break;
+                case 'spot ufo':
+                    ufoGameView.classList.remove('hidden');
+                    ufoGameView.classList.add('flex');
+                    ufoGame.reset();
+                    break;
+                case 'break code':
+                    codeGameView.classList.remove('hidden');
+                    codeGameView.classList.add('flex');
+                    codeGame.reset();
+                    break;
+                default:
+                    eggView.classList.remove('hidden');
+                    eggText.innerHTML = "❓ UNKNOWN SIGNAL ❓";
+            }
+        }
+
+        // Function to safely highlight text within the Mission Statement
+        function searchContent(query) {
+            const indexView = document.getElementById('protocol-index-view');
+            const eggView = document.getElementById('easter-egg-view');
+            const minigameView = document.getElementById('minigame-view');
+            // NEW
+            const treasureGameView = document.getElementById('minigame-treasure-view');
+            const ufoGameView = document.getElementById('minigame-ufo-view');
+            const codeGameView = document.getElementById('minigame-code-view');
+            
+            let text = originalMissionText;
+            const lowerQuery = query.trim().toLowerCase();
+
+            // --- NEW: Check for easter egg terms ---
+            if (['banana', 'apple', '67', 'easter egg', 'reid', 'declan', 'greyson', 'charlie', 'binary bananas', 'konami', 'dinosaur', 'dragon', 'gemini', 'code', 'treasure', 'ufo', 'secret', 'hello', 'matrix', 'thor', 'secret game', 'find treasure', 'spot ufo', 'break code'].includes(lowerQuery)) {
+                handleEasterEggSearch(lowerQuery);
+                return; // Stop the rest of the search function
+            }
+            
+            // --- Else, run normal search ---
+            
+            // Hide easter egg/game views if they were open
+            if (!eggView.classList.contains('hidden')) eggView.classList.add('hidden');
+            if (!minigameView.classList.contains('hidden')) {
+                minigameView.classList.add('hidden');
+                minigameView.classList.remove('flex');
+                if (gameActive) endGame(); // Stop game
+            }
+            // NEW
+            if (!treasureGameView.classList.contains('hidden')) {
+                treasureGameView.classList.add('hidden');
+                treasureGameView.classList.remove('flex');
+            }
+            if (!ufoGameView.classList.contains('hidden')) {
+                ufoGameView.classList.add('hidden');
+                ufoGameView.classList.remove('flex');
+                if (ufoGameActive) ufoGame.end();
+            }
+            if (!codeGameView.classList.contains('hidden')) {
+                codeGameView.classList.add('hidden');
+                codeGameView.classList.remove('flex');
+            }
+
+            // Make sure the correct view is visible (default to index)
+            // REMOVED: showView('index'); <-- This was the bug causing the input to clear
+            document.getElementById('protocol-index-view').classList.remove('hidden');
+
+
+            // 1. Restore the original text if the search field is empty
+            if (!query || query.trim() === '') {
+                indexView.innerHTML = text;
+                return;
+            }
+            
+            // Only perform search if the Index view is currently visible
+            if (!indexView.classList.contains('hidden')) {
+                // 2. Escape special characters and create a case-insensitive, global regex
+                const plainText = text.replace(/<[^>]*>/g, ''); 
+                const escapedQuery = query.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                const searchRegex = new RegExp('(' + escapedQuery + ')', 'gi');
+
+                // 3. Search and highlight
+                if (searchRegex.test(plainText)) {
+                    const highlightedHtml = originalMissionText.replace(searchRegex, '<mark class="bg-accent-gold text-gray-900 p-0.5 rounded-sm">$1</mark>');
+                    indexView.innerHTML = highlightedHtml;
+                } else {
+                    indexView.innerHTML = text;
+                }
+            }
+        }
+        
+        // --- MOCKED: Geolocation function to bypass Iframe security policy errors ---
+        function getGeolocation() {
+            // Because geolocation is disabled by the permissions policy in this environment, 
+            // we will simulate a successful geo-scan to keep the UI functional and avoid errors.
+            console.log("Geolocation: Using simulated coordinates due to environment permissions policy.");
+            
+            // 1. Simulate a successful scan result
+            currentLocationDisplay = `Geo-Scan Simulated: Lat 42.9247, Lon -82.4930 (N.A. Default)`;
+
+            // 2. Set the default region
+            currentManualRegion = "North America"; 
+            
+            // 3. Render the protocols using the simulated data
+            renderRegionalProtocols();
+        }
+
+
+        // Function to update the manually selected region and re-render
+        function setCurrentRegion(region) {
+            currentManualRegion = region;
+            renderRegionalProtocols();
+        }
+
+        // Function to render the regional protocols dashboard
+        function renderRegionalProtocols() {
+            const container = document.getElementById('regional-protocols-view');
+            
+            // 1. Location Header and Selector
+            const locationHeaderHtml = `
+                <h2 class="text-4xl font-bold text-accent-gold mb-4">
+                   Regional Protocol Status Dashboard
+                </h2>
+                <div class="mb-8 p-4 rounded-lg bg-protocol-blue/50 border border-accent-cyan flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                    <div class="flex flex-col mb-4 sm:mb-0">
+                        <!-- Detected Location Display (using the Geolocation result) -->
+                        <p class="text-lg font-semibold flex items-start mb-2 sm:mb-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-accent-cyan mr-2 mt-1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            <span class="flex flex-col">
+                                <span class="text-base text-cyan-300">Detected Location:</span>
+                                <span class="text-accent-gold font-bold text-sm sm:text-lg">${currentLocationDisplay}</span>
+                            </span>
+                        </p>
+                    </div>
+
+                    <!-- Manual Region Selector (for protocol filtering) -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center w-full sm:w-auto">
+                        <p class="text-lg font-semibold whitespace-nowrap mr-4 mb-2 sm:mb-0">
+                            Protocol Region:
+                            <span class="ml-1 text-accent-gold font-bold">${currentManualRegion}</span>
+                        </p>
+                        <select 
+                            id="region-selector" 
+                            onchange="setCurrentRegion(this.value)"
+                            class="p-2 rounded-lg bg-background-dark border border-accent-gold text-white focus:ring-1 focus:ring-accent-gold w-full sm:w-auto"
+                        >
+                            ${regionalProtocols.map(p => 
+                                `<option value="${p.region}" ${p.region === currentManualRegion ? 'selected' : ''}>
+                                    ${p.region}
+                                </option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </div>
+                <p class="text-lg mb-6 text-cyan-100/70">
+                    Protocols for the selected region are highlighted in **bright gold**.
+                </p>
+            `;
+            
+            // 2. Generate the List Items
+            const listHtml = regionalProtocols.map(p => {
+                let borderColor = 'border-accent-cyan';
+                let statusBg = 'bg-green-800 text-green-200';
+                let cardClasses = 'bg-protocol-blue transition duration-300 hover:bg-protocol-blue/80';
+                let regionTextColor = 'text-white';
+
+                if (p.status === 'Critical Update') {
+                    borderColor = 'border-red-500';
+                    statusBg = 'bg-red-800 text-red-200';
+                } else if (p.status === 'Requires Review') {
+                    borderColor = 'border-yellow-500';
+                    statusBg = 'bg-yellow-800 text-yellow-200';
+                }
+                
+                // Highlight the card if it matches the current region
+                if (p.region === currentManualRegion) {
+                    borderColor = 'border-accent-gold border-4'; // Thicker border
+                    cardClasses = 'bg-protocol-blue/90 shadow-2xl transition duration-300 ring-2 ring-accent-gold';
+                    regionTextColor = 'text-accent-gold'; // Gold title text
+                }
+
+                return `
+                    <div class="p-4 rounded-xl ${cardClasses} border-l-4 ${borderColor} shadow-xl mb-4">
+                        <div class="flex justify-between items-start mb-1">
+                            <h3 class="text-2xl font-bold ${regionTextColor}">${p.region}</h3>
+                            <span class="text-xs font-mono p-1 rounded-full ${statusBg} px-3 uppercase tracking-wider">
+                                ${p.status}
+                            </span>
+                        </div>
+                        <p class="text-gray-400 mt-2">Focus: <span class="text-gray-200">${p.focus}</span></p>
+                        <p class="text-gray-400">Key ID: <span class="text-accent-cyan">${p.key_protocol}</span></p>
+                    </div>
+                `;
+            }).join('');
+            
+            // 3. Combine and render
+            container.innerHTML = locationHeaderHtml + `<div class="mt-4 space-y-4">${listHtml}</div>`;
+        }
+        
+        // Function to switch between the different main content views
+        function showView(viewId) {
+            document.getElementById('protocol-index-view').classList.add('hidden');
+            document.getElementById('regional-protocols-view').classList.add('hidden');
+            document.getElementById('easter-egg-view').classList.add('hidden'); // Also hide egg view
+            document.getElementById('minigame-view').classList.add('hidden'); // Also hide game view
+            document.getElementById('minigame-view').classList.remove('flex');
+            // NEW
+            document.getElementById('minigame-treasure-view').classList.add('hidden');
+            document.getElementById('minigame-treasure-view').classList.remove('flex');
+            document.getElementById('minigame-ufo-view').classList.add('hidden');
+            document.getElementById('minigame-ufo-view').classList.remove('flex');
+            document.getElementById('minigame-code-view').classList.add('hidden');
+            document.getElementById('minigame-code-view').classList.remove('flex');
+
+            
+            // Stop games if navigating away
+            if(gameActive) endGame();
+            if(ufoGameActive) ufoGame.end();
+
+            if (viewId === 'index') {
+                document.getElementById('protocol-index-view').classList.remove('hidden');
+            } else if (viewId === 'regions') {
+                document.getElementById('regional-protocols-view').classList.remove('hidden');
+                // The geolocation function now attempts to get the real location
+                getGeolocation(); 
+            }
+            
+            // Clear search input whenever switching views
+            const searchInput = document.getElementById('search-input');
+            if (searchInput.value) {
+                searchInput.value = '';
+                // Don't call searchContent('') here, as it would re-call showView('index')
+                // Just reset the original text
+                document.getElementById('protocol-index-view').innerHTML = originalMissionText;
+            }
+        }
+
+
+        // Function to set the visual mode and update icons
+        function applyMode(isLight) {
+            const body = document.body;
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+            const menuIcon = document.getElementById('menu-icon');
+            const closeIcon = document.getElementById('close-icon');
+
+            if (isLight) {
+                body.classList.add('light-mode');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                
+                // Hide or show icons based on menu state in light mode (they are dark text)
+                if (document.getElementById('side-menu').classList.contains('-translate-x-full')) {
+                    menuIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                } else {
+                    menuIcon.classList.add('hidden');
+                    closeIcon.classList.remove('hidden');
+                }
+            } else {
+                body.classList.remove('light-mode');
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+                
+                // Hide or show icons based on menu state in dark mode (they are cyan text)
+                if (document.getElementById('side-menu').classList.contains('-translate-x-full')) {
+                    menuIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                } else {
+                    menuIcon.classList.add('hidden');
+                    closeIcon.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Function to toggle between light and dark mode
+        function toggleLightMode() {
+            // isLight is true if 'light-mode' class is added (white theme)
+            const isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('archeologyMode', isLight ? 'light' : 'dark');
+            applyMode(isLight);
+        }
+
+        // Function to toggle the side menu
+        function toggleMenu() {
+            const sideMenu = document.getElementById('side-menu');
+            const menuOverlay = document.getElementById('menu-overlay');
+            const menuIcon = document.getElementById('menu-icon');
+            const closeIcon = document.getElementById('close-icon');
+
+            // Check if the menu is currently hidden
+            const isHidden = sideMenu.classList.contains('-translate-x-full');
+
+            if (isHidden) {
+                // SHOW menu
+                sideMenu.classList.remove('-translate-x-full');
+                menuOverlay.classList.remove('hidden');
+                menuIcon.classList.add('hidden');
+                closeIcon.classList.remove('hidden');
+            } else {
+                // HIDE menu
+                sideMenu.classList.add('-translate-x-full');
+                menuOverlay.classList.add('hidden');
+                menuIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+            }
+        }
+
+        // --- BANANA ANIMATION LOGIC ---
+        function spawnBanana(isOverload = false) {
+            const banana = document.createElement('span');
+            banana.textContent = '🍌';
+            
+            // Randomize the start position (top) between 10% and 90%
+            const randomTop = 10 + Math.random() * 70; 
+            
+            // Apply animation class and randomized style
+            banana.className = 'flying-banana'; 
+            banana.style.top = `${randomTop}vh`;
+            
+            let size = 6 + Math.random() * 2;
+            
+            // Overload bananas are smaller and faster
+            if (isOverload) {
+                size = 2 + Math.random() * 2; // 2rem to 4rem
+                banana.style.animationDuration = `${2 + Math.random() * 2}s`; // 2-4 seconds
+            }
+
+            banana.style.fontSize = `${size}rem`; 
+
+            document.body.appendChild(banana);
+
+            // Remove the banana after the animation duration (5 seconds + a small margin)
+            setTimeout(() => {
+                banana.remove();
+            }, 5100); 
+        }
+
+        // --- Banana Overload function ---
+        function triggerBananaOverload() {
+            console.log("KONAMI CODE: BANANA OVERLOAD (500) INITIATED");
+            // Spawn 500 bananas at random intervals
+            for (let i = 0; i < 500; i++) { // <-- UPDATED FROM 200 to 500
+                setTimeout(() => {
+                    spawnBanana(true); // true = isOverload
+                }, Math.random() * 2000); // over 2 seconds
+            }
+        }
+
+        // --- "67" ANIMATION LOGIC ---
+        function spawnSixtySeven() {
+            // UPDATED: Check for a 1% chance
+            if (Math.random() < 0.01) {
+                const number = document.createElement('span');
+                number.textContent = '67';
+                number.className = 'flying-number';
+
+                // Randomize position on screen
+                number.style.top = `${10 + Math.random() * 80}vh`;
+                number.style.left = `${10 + Math.random() * 80}vw`;
+
+                document.body.appendChild(number);
+
+                // UPDATED: Remove the number after its animation (0.5 seconds)
+                setTimeout(() => {
+                    number.remove();
+                }, 500); // 500ms = 0.5s
+            }
+        }
+
+        // --- MINIGAME FUNCTIONS ("Banana Blitz") ---
+        function startGame() {
+            gameActive = true;
+            gameScore = 0;
+            gameTimeLeft = 30;
+
+            document.getElementById('game-score').textContent = '0';
+            document.getElementById('start-game-btn').classList.add('hidden');
+            document.getElementById('game-over-text').classList.add('hidden');
+            document.getElementById('game-timer').textContent = `Time Left: ${gameTimeLeft}s`;
+
+            moveBanana(); // First move
+            gameMoveInterval = setInterval(moveBanana, 900); // Move banana every 0.9 seconds
+
+            // Start the main game timer
+            gameTimerInterval = setInterval(() => {
+                gameTimeLeft--;
+                document.getElementById('game-timer').textContent = `Time Left: ${gameTimeLeft}s`;
+                if (gameTimeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameTimerInterval);
+            clearInterval(gameMoveInterval);
+
+            document.getElementById('start-game-btn').textContent = 'Play Again?';
+            document.getElementById('start-game-btn').classList.remove('hidden');
+            document.getElementById('game-banana').classList.add('hidden');
+            document.getElementById('game-over-text').classList.remove('hidden');
+        }
+
+        function moveBanana() {
+            if (!gameActive) return;
+
+            const area = document.getElementById('game-area');
+            const banana = document.getElementById('game-banana');
+            const areaRect = area.getBoundingClientRect();
+            
+            // Estimate banana size (approx 6rem, but we'll use pixels for accuracy)
+            const bananaSize = 80; 
+
+            const randomTop = Math.random() * (areaRect.height - bananaSize);
+            const randomLeft = Math.random() * (areaRect.width - bananaSize);
+
+            banana.style.top = `${randomTop}px`;
+            banana.style.left = `${randomLeft}px`;
+            banana.classList.remove('hidden');
+        }
+
+        function whackBanana() {
+            if (!gameActive) return;
+            
+            gameScore++;
+            document.getElementById('game-score').textContent = gameScore;
+            
+            // Hide and move immediately
+            document.getElementById('game-banana').classList.add('hidden');
+            
+            // Clear the interval and restart it to make the timing feel more reactive
+            clearInterval(gameMoveInterval);
+            moveBanana(); // Move now
+            gameMoveInterval = setInterval(moveBanana, 900); // Restart interval
+        }
+
+        // --- NEW: Treasure Game Logic ---
+        const treasureGame = {
+            reset: () => {
+                treasureGameWinner = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
+                document.getElementById('treasure-message').textContent = 'One of these chests has the banana! Choose wisely...';
+                document.getElementById('treasure-message').classList.remove('text-accent-gold', 'text-red-500');
+                document.getElementById('chest-1').textContent = '📦';
+                document.getElementById('chest-2').textContent = '📦';
+                document.getElementById('chest-3').textContent = '📦';
+                document.getElementById('treasure-reset-btn').classList.add('hidden');
+            },
+            pick: (chestNumber) => {
+                // Ignore clicks if already won
+                if (document.getElementById('treasure-reset-btn').classList.contains('hidden') === false) return;
+
+                const messageEl = document.getElementById('treasure-message');
+                document.getElementById('treasure-reset-btn').classList.remove('hidden');
+
+                if (chestNumber === treasureGameWinner) {
+                    document.getElementById(`chest-${chestNumber}`).textContent = '🍌';
+                    messageEl.textContent = 'You found the banana!';
+                    messageEl.classList.add('text-accent-gold');
+                } else {
+                    document.getElementById(`chest-${chestNumber}`).textContent = '🍎';
+                    document.getElementById(`chest-${treasureGameWinner}`).textContent = '🍌'; // Show the winner
+                    messageEl.textContent = 'Oh no, an apple! Try again.';
+                    messageEl.classList.add('text-red-500');
+                }
+            }
+        };
+
+        // --- NEW: UFO Game Logic ---
+        const ufoGame = {
+            start: () => {
+                ufoGameActive = true;
+                ufoGameScore = 0;
+                ufoGameTimeLeft = 20;
+
+                document.getElementById('ufo-score').textContent = '0';
+                document.getElementById('ufo-start-btn').classList.add('hidden');
+                document.getElementById('ufo-over-text').classList.add('hidden');
+                document.getElementById('ufo-timer').textContent = `${ufoGameTimeLeft}s`;
+
+                ufoGame.move(); // First move
+                ufoGameMoveInterval = setInterval(ufoGame.move, 700); // Move UFO every 0.7s
+
+                ufoGameTimerInterval = setInterval(() => {
+                    ufoGameTimeLeft--;
+                    document.getElementById('ufo-timer').textContent = `${ufoGameTimeLeft}s`;
+                    if (ufoGameTimeLeft <= 0) {
+                        ufoGame.end();
+                    }
+                }, 1000);
+            },
+            end: () => {
+                ufoGameActive = false;
+                clearInterval(ufoGameTimerInterval);
+                clearInterval(ufoGameMoveInterval);
+
+                document.getElementById('ufo-start-btn').textContent = 'Play Again?';
+                document.getElementById('ufo-start-btn').classList.remove('hidden');
+                document.getElementById('ufo-target').classList.add('hidden');
+                document.getElementById('ufo-over-text').classList.remove('hidden');
+            },
+            move: () => {
+                if (!ufoGameActive) return;
+                const area = document.getElementById('ufo-area');
+                const ufo = document.getElementById('ufo-target');
+                const areaRect = area.getBoundingClientRect();
+                const ufoSize = 60; // Approx 5rem
+                const randomTop = Math.random() * (areaRect.height - ufoSize);
+                const randomLeft = Math.random() * (areaRect.width - ufoSize);
+                ufo.style.top = `${randomTop}px`;
+                ufo.style.left = `${randomLeft}px`;
+                ufo.classList.remove('hidden');
+            },
+            hit: () => {
+                if (!ufoGameActive) return;
+                ufoGameScore++;
+                document.getElementById('ufo-score').textContent = ufoGameScore;
+                document.getElementById('ufo-target').classList.add('hidden');
+                clearInterval(ufoGameMoveInterval);
+                setTimeout(ufoGame.move, 100); // Move faster after hit
+                ufoGameMoveInterval = setInterval(ufoGame.move, 700);
+            },
+            reset: () => {
+                if (ufoGameActive) ufoGame.end();
+                ufoGameScore = 0;
+                ufoGameTimeLeft = 20;
+                document.getElementById('ufo-score').textContent = '0';
+                document.getElementById('ufo-timer').textContent = `${ufoGameTimeLeft}s`;
+                document.getElementById('ufo-over-text').classList.add('hidden');
+                document.getElementById('ufo-start-btn').textContent = 'Start Game';
+                document.getElementById('ufo-start-btn').classList.remove('hidden');
+                document.getElementById('ufo-target').classList.add('hidden');
+            }
+        };
+
+        // --- NEW: Code Breaker Game Logic ---
+        const codeGame = {
+            reset: () => {
+                // Generate a 3-digit secret code
+                codeGameSecret = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+                codeGameGuesses = 0;
+                console.log(`Code Breaker Secret: ${codeGameSecret}`); // For debugging
+                const inputEl = document.getElementById('code-input');
+                inputEl.value = '';
+                inputEl.disabled = false;
+                document.getElementById('code-message').textContent = 'Guess the 3-digit secret code (000-999)';
+                const feedbackEl = document.getElementById('code-feedback');
+                feedbackEl.textContent = '';
+                feedbackEl.classList.remove('text-red-500', 'text-accent-gold', 'text-cyan-300');
+            },
+            guess: () => {
+                const inputEl = document.getElementById('code-input');
+                const guess = inputEl.value.padStart(3, '0');
+                const feedbackEl = document.getElementById('code-feedback');
+                
+                if (guess.length !== 3 || isNaN(guess) || inputEl.value === "") {
+                    feedbackEl.textContent = 'Invalid. Must be 3 digits.';
+                    feedbackEl.classList.add('text-red-500');
+                    return;
+                }
+
+                codeGameGuesses++;
+                feedbackEl.classList.remove('text-red-500', 'text-accent-gold', 'text-cyan-300');
+
+                if (guess === codeGameSecret) {
+                    feedbackEl.textContent = `CRACKED! You got it in ${codeGameGuesses} guesses!`;
+                    feedbackEl.classList.add('text-accent-gold');
+                    inputEl.disabled = true;
+                    setTimeout(codeGame.reset, 3000); // Reset after 3s
+                } else {
+                    // Give hints: Correct digits, Correct positions
+                    let correctPos = 0;
+                    let correctNum = 0;
+                    let secretCheck = codeGameSecret.split('');
+                    let guessCheck = guess.split('');
+
+                    // Check correct positions
+                    for(let i=0; i<3; i++) {
+                        if (guessCheck[i] === secretCheck[i]) {
+                            correctPos++;
+                            secretCheck[i] = null; // Mark as used
+                            guessCheck[i] = null; // Mark as used
+                        }
+                    }
+                    
+                    // Check correct numbers (in wrong positions)
+                    for(let i=0; i<3; i++) {
+                        if (guessCheck[i] !== null) {
+                            let foundIndex = secretCheck.indexOf(guessCheck[i]);
+                            if (foundIndex !== -1) {
+                                correctNum++;
+                                secretCheck[foundIndex] = null; // Mark as used
+                            }
+                        }
+                    }
+
+                    feedbackEl.textContent = `Correct Positions: ${correctPos} | Correct Numbers: ${correctNum}`;
+                    feedbackEl.classList.add('text-cyan-300');
+                }
+            }
+        };
+
+
+        // Function to initialize the mode and capture original text and start the animation
+        function initializeApp() {
+            const savedMode = localStorage.getItem('archeologyMode');
+            
+            // 1. Set initial light/dark state
+            let initialIsLight = savedMode === 'light';
+            applyMode(initialIsLight);
+            
+            // 2. Capture the original content text once the DOM is ready
+            const missionElement = document.getElementById('protocol-index-view');
+            if (missionElement) {
+                // Capture the original HTML content of the index view
+                originalMissionText = missionElement.innerHTML;
+            }
+
+            // 3. Start the banana spawning loop (every 30 seconds)
+            setInterval(spawnBanana, 30000); 
+            
+            // 4. Start the "67" spawning loop (every 5 seconds)
+            setInterval(spawnSixtySeven, 5000);
+
+            // 5. Initialize the view to the Index
+            showView('index');
+            
+            // 6. Run the geolocation function immediately to set the location data
+            getGeolocation(); 
+            
+            // 7. --- NEW: Konami Code Listener ---
+            document.addEventListener('keydown', (e) => {
+                // UPDATED: Only ignore if user is typing in the search-input
+                if (document.activeElement.id === 'search-input') return;
+
+                userSequence.push(e.key);
+                // Keep only the last 10 keys
+                userSequence = userSequence.slice(-konamiSequence.length);
+
+                if (userSequence.join('') === konamiSequence.join('')) {
+                    triggerBananaOverload();
+                    userSequence = []; // Reset
+                }
+            });
+        }
+
+        // --- Initialization ---
+        // Run mode check and start the animations when the page finishes loading
+        window.addEventListener('load', initializeApp);
+    </script>
+</body>
+</html>
